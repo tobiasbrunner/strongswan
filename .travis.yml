@@ -47,6 +47,8 @@ matrix:
     - compiler: gcc
       env: TEST=apidoc
     - compiler: gcc
+      env: TEST=coverage
+    - compiler: gcc
       env: TEST=win64 MONOLITHIC=yes
     # this does not work on 14.04 due to a missing @4 decoration for
     # TryAcquireSRWLockExclusive in MinGW 3.1.0

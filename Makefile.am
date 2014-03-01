@@ -68,8 +68,16 @@ coverage:
 		@$(MAKE) cov-reset
 		@$(MAKE) check
 		@$(MAKE) cov-report
+
+coveralls:
+		@$(MAKE) cov-reset-common
+		@$(MAKE) check
+		@coveralls --exclude-pattern '.*/tests/.*'
 else
 coverage:
+		@echo "reconfigure with --enable-coverage"
+
+coveralls:
 		@echo "reconfigure with --enable-coverage"
 endif
 
