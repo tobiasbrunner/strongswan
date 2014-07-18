@@ -120,7 +120,7 @@ if test "$1" = "deps"; then
 	case "$TRAVIS_OS_NAME" in
 	linux)
 		sudo apt-get update -qq && \
-		sudo apt-get install -qq bison flex gperf gettext $DEPS
+		sudo apt-get install -qq bison flex gperf gettext gdb $DEPS
 		;;
 	osx)
 		brew update && \
@@ -142,7 +142,25 @@ CONFIG="$CONFIG
 	--enable-monolithic=${MONOLITHIC-no}
 	--enable-leak-detective=${LEAK_DETECTIVE-no}"
 
+get_backtrace() {
+	RUNNER=`pidof lt-tests | cut -f 1 -d ' '`
+	if test -n "$RUNNER"; then
+		echo
+		echo "### BACKTRACE OF TEST RUNNER ###"
+		echo
+		sudo gdb -batch -quiet -ex "thread apply all bt full" -ex "quit" -p $RUNNER
+		echo
+		echo "################################"
+	fi
+}
+trap get_backtrace 14
+
+# trigger backtrace after 9 minutes (travis stops after 10 min without output)
+sleep 540 && kill -s 14 $$ &
+TIMER=$!
+
 echo "$ ./autogen.sh"
 ./autogen.sh || exit $?
 echo "$ CC=$CC CFLAGS=\"$CFLAGS\" ./configure $CONFIG && make $TARGET"
-CC="$CC" CFLAGS="$CFLAGS" ./configure $CONFIG && make -j4 $TARGET
+CC="$CC" CFLAGS="$CFLAGS" ./configure $CONFIG && make -j4 $TARGET && kill $TIMER &
+wait $!

@@ -401,7 +401,7 @@ void test_setup_timeout(int s)
 	sigaction(SIGALRM, &action, NULL);
 	sigaction(SIGUSR1, &action, NULL);
 
-	alarm(s);
+	//alarm(s);
 
 	worker_failed = FALSE;
 }

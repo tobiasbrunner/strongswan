@@ -42,6 +42,3 @@ matrix:
       env: TEST=win64 MONOLITHIC=yes
     - compiler: gcc
       env: TEST=win32 MONOLITHIC=yes
-    - compiler: clang
-      os: osx
-      env: TEST=osx
