@@ -16,7 +16,11 @@
 
 #include "hashtable.h"
 
+#include <library.h>
 #include <utils/chunk.h>
+#include <utils/debug.h>
+
+void *hashtable_debug;
 
 /** The maximum capacity of the hash table (MUST be a power of 2) */
 #define MAX_CAPACITY (1 << 30)
@@ -226,16 +230,26 @@ static void rehash(private_hashtable_t *this)
 		return;
 	}
 
+	if (hashtable_debug == this)
+	{
+		DBG1(DBG_LIB, "--- rehashing hashtable old %u/%u 0x%x", this->count, this->capacity, this->mask);
+	}
+
 	old_capacity = this->capacity;
 	old_table = this->table;
 
 	init_hashtable(this, old_capacity << 1);
 
+	if (hashtable_debug == this)
+	{
+		DBG1(DBG_LIB, "--- rehashing hashtable new %u/%u 0x%x", this->count, this->capacity, this->mask);
+	}
+
 	for (row = 0; row < old_capacity; row++)
 	{
 		pair_t *pair, *next;
 		u_int new_row;
-
+		u_int c = 0;
 		pair = old_table[row];
 		while (pair)
 		{	/* insert pair at the front of new bucket*/
@@ -244,6 +258,11 @@ static void rehash(private_hashtable_t *this)
 			pair->next = this->table[new_row];
 			this->table[new_row] = pair;
 			pair = next;
+			c++;
+		}
+		if (hashtable_debug == this)
+		{
+			DBG1(DBG_LIB, "---  : from row %u added %u entries to new table", row, c);
 		}
 	}
 	free(old_table);
@@ -259,10 +278,18 @@ METHOD(hashtable_t, put, void*,
 	hash = this->hash(key);
 	row = hash & this->mask;
 	pair = this->table[row];
+	if (hashtable_debug == this)
+	{
+		DBG1(DBG_LIB, "---  put item with hash %u into row %u", hash, row);
+	}
 	while (pair)
 	{	/* search existing bucket for key */
 		if (this->equals(key, pair->key))
 		{
+			if (hashtable_debug == this)
+			{
+				DBG1(DBG_LIB, "---  - replace pair", hash, row);
+			}
 			old_value = pair->value;
 			pair->value = value;
 			pair->key = key;
@@ -272,6 +299,10 @@ METHOD(hashtable_t, put, void*,
 	}
 	if (!pair)
 	{	/* insert at the front of bucket */
+		if (hashtable_debug == this)
+		{
+			DBG1(DBG_LIB, "---  - new pair", hash, row);
+		}
 		pair = pair_create(key, value, hash);
 		pair->next = this->table[row];
 		this->table[row] = pair;
@@ -296,14 +327,24 @@ static void *get_internal(private_hashtable_t *this, const void *key,
 	}
 
 	pair = this->table[this->hash(key) & this->mask];
+	if (hashtable_debug == this)
+	{
+		DBG1(DBG_LIB, "---  get item with hash %u from row %u", this->hash(key), this->hash(key) & this->mask);
+	}
+	u_int c = 1;
 	while (pair)
 	{
 		if (equals(key, pair->key))
 		{
+			if (hashtable_debug == this)
+			{
+				DBG1(DBG_LIB, "---  - item found after %u tries", c);
+			}
 			value = pair->value;
 			break;
 		}
 		pair = pair->next;
+		c++;
 	}
 	return value;
 }

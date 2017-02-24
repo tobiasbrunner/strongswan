@@ -651,9 +651,11 @@ static bool load_dependencies(private_plugin_loader_t *this,
 		 * otherwise e.g. a specific database implementation loaded before
 		 * another might cause a plugin feature loaded in-between to fail */
 		lookup.feature = &provided->feature[i];
+		char *p = plugin_feature_get_string(&provided->feature[i]);
 		do
 		{	/* prefer an exactly matching feature, could be omitted but
 			 * results in a more predictable behavior */
+			DBG1(DBG_LIB, "=== look for existing %s feature [%u]", p, registered_feature_hash(&lookup));
 			registered = this->features->get_match(this->features,
 										 &lookup,
 										 (void*)loadable_feature_equals);
@@ -671,6 +673,7 @@ static bool load_dependencies(private_plugin_loader_t *this,
 			 * DB_ANY it might be needed to load all matching features */
 		}
 		while (registered);
+		free(p);
 
 		if (!find_compatible_feature(this, &provided->feature[i]))
 		{
@@ -832,7 +835,12 @@ static void register_features(private_plugin_loader_t *this,
 		switch (feature->kind)
 		{
 			case FEATURE_PROVIDE:
+			{
+				char *provide;
+
 				lookup.feature = feature;
+				provide = plugin_feature_get_string(feature);
+				DBG1(DBG_LIB, "=== look for existing %s feature [%u]", provide, registered_feature_hash(&lookup));
 				registered = this->features->get(this->features, &lookup);
 				if (!registered)
 				{
@@ -848,10 +856,13 @@ static void register_features(private_plugin_loader_t *this,
 					.reg = reg,
 					.dependencies = count - i,
 				);
+				DBG1(DBG_LIB, "=== add %s feature in plugin '%s' to reg [%p] [%u]", provide, entry->plugin->get_name(entry->plugin), registered, this->features->get_count(this->features));
+				free(provide);
 				registered->plugins->insert_last(registered->plugins,
 												 provided);
 				entry->features->insert_last(entry->features, provided);
 				break;
+			}
 			case FEATURE_REGISTER:
 			case FEATURE_CALLBACK:
 				reg = feature;
@@ -1355,6 +1366,7 @@ plugin_loader_t *plugin_loader_create()
 							(hashtable_hash_t)registered_feature_hash,
 							(hashtable_equals_t)registered_feature_equals, 64),
 	);
+	hashtable_debug = this->features;
 
 	return &this->public;
 }

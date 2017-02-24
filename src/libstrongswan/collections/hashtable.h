@@ -23,6 +23,8 @@
 
 #include <collections/enumerator.h>
 
+extern void *hashtable_debug;
+
 typedef struct hashtable_t hashtable_t;
 
 /**

@@ -72,7 +72,7 @@ coverage:
 coveralls:
 		@$(MAKE) cov-reset-common
 		@$(MAKE) check
-		@coveralls --exclude-pattern '.*/tests/.*'
+		@coveralls --build-root $(top_builddir) --exclude-pattern '.*/tests/.*'
 else
 coverage:
 		@echo "reconfigure with --enable-coverage"
